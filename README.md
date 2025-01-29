@@ -10,7 +10,7 @@ Neural Network with TensorFlow: Uses fully connected layers for predictions.
 Installation & Setup
 1. Clone the repository
 git clone https://github.com/phantomkali/Fed-learning-with-blockchain.git
-cd vertical-federated-learning
+cd Fed-learning-with-blockchain
 2. Install dependencies
 pip install -r requirements.txt
 3. Prepare the Configuration File
