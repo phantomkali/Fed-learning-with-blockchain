@@ -145,20 +145,20 @@ class VFLSystem:
     def evaluate(self, X1_test, X2_test, y_test):
     #Evaluate the model performance on test data"""
     # Convert test data to tensors
-    X1_test = tf.convert_to_tensor(X1_test, dtype=tf.float32)
-    X2_test = tf.convert_to_tensor(X2_test, dtype=tf.float32)
-    y_test = tf.convert_to_tensor(y_test, dtype=tf.float32)
+        X1_test = tf.convert_to_tensor(X1_test, dtype=tf.float32)
+        X2_test = tf.convert_to_tensor(X2_test, dtype=tf.float32)
+        y_test = tf.convert_to_tensor(y_test, dtype=tf.float32)
     
-    # Get predictions from both clients
-    pred1 = self.client1.model(X1_test)
-    pred2 = self.client2.model(X2_test)
+        # Get predictions from both clients
+        pred1 = self.client1.model(X1_test)
+        pred2 = self.client2.model(X2_test)
     
-    # Combine predictions (average in this case)
-    combined_pred = (pred1 + pred2) / 2
+        # Combine predictions (average in this case)
+        combined_pred = (pred1 + pred2) / 2
     
-    # Calculate MSE loss
-    loss = tf.keras.losses.MSE(y_test, combined_pred)
-    return tf.reduce_mean(loss)
+        # Calculate MSE loss
+        loss = tf.keras.losses.MSE(y_test, combined_pred)
+        return tf.reduce_mean(loss)
     def preprocess_data(self, data):
         """Prepare and preprocess data for both clients"""
         # Handle missing values and convert to numeric
@@ -185,7 +185,7 @@ class VFLSystem:
         return X1_scaled, X2_scaled, y
 
     
-
+   
     def train(self, data, epochs=10, batch_size=32):
         """Train the federated model and store updates locally"""
         X1, X2, y = self.preprocess_data(data)
@@ -203,17 +203,34 @@ class VFLSystem:
         optimizer2 = tf.keras.optimizers.Adam(learning_rate=0.001)
         
         for epoch in range(epochs):
-            # Training loop implementation remains the same
-            # ... [Previous training loop code]
+            # Training loop implementation
+            with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
+                # Forward pass
+                pred1 = self.client1.model(X1_train, training=True)
+                pred2 = self.client2.model(X2_train, training=True)
+                
+                # Combine predictions
+                combined_pred = (pred1 + pred2) / 2
+                
+                # Calculate loss
+                loss = tf.keras.losses.MSE(y_train, combined_pred)
+                mean_loss = tf.reduce_mean(loss)
+            
+            # Compute gradients
+            gradients1 = tape1.gradient(mean_loss, self.client1.model.trainable_variables)
+            gradients2 = tape2.gradient(mean_loss, self.client2.model.trainable_variables)
+            
+            # Apply gradients
+            optimizer1.apply_gradients(zip(gradients1, self.client1.model.trainable_variables))
+            optimizer2.apply_gradients(zip(gradients2, self.client2.model.trainable_variables))
             
             # Store model updates locally and on blockchain
-            # Inside the train method, replace the weights dictionary creation with:
             weights = {
-                        "client1": [w.tolist() for w in self.client1.model.get_weights()],
-                         "client2": [w.tolist() for w in self.client2.model.get_weights()]
-}
-            # Save to local storage
+                "client1": [w.tolist() for w in self.client1.model.get_weights()],
+                "client2": [w.tolist() for w in self.client2.model.get_weights()]
+            }
             storage_id = self.storage.save_model_weights(weights, epoch)
+            
             
             # Submit to blockchain if configured
             if self.blockchain_connector:
@@ -230,18 +247,16 @@ class VFLSystem:
 
 
 if __name__ == "__main__":
-#configration
-config = {
-    "infura_url": "YOUR_INFURA_URL",
-    "contract_address": "YOUR_CONTRACT_ADDRESS",
-    "private_key": "YOUR_WALLET_PRIVATE_KEY",
-    "abi_file": "PATH_TO_YOUR_ABI.json"
-}
-
-
+    # Configuration
+    config = {
+        "infura_url": "YOUR INFURA URL",
+        "contract_address": "WALLET CONTRACT ADDRESS",
+        "private_key": "YOUR PRIVATE KEY",
+        "abi_file": "YOUR ABI FILE PATH(JSON)"
+    }
     
     # Load data
-    filepath = "C:/Users/keerthan/Desktop/VFL BL/crypto_trends_insights_2024.csv"
+    filepath = "C:/Users/keerthan/Desktop/VFL BL/crypto_trends_insights_2024.csv"(THIS IS MY DATASET FILE PATH USE YOUR FILE PATH)
     data = pd.read_csv(filepath,encoding='latin-1')
     
     # Initialize and train
